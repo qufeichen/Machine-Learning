@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Basic word2vec example."""
+"""Basic word2vec example - modified to train on local data instead of download text8.zip"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -23,49 +23,51 @@ import math
 import os
 import random
 from tempfile import gettempdir
-import zipfile
+import string
+import re
 
 import numpy as np
 from six.moves import urllib
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
-# Step 1: Download the data.
-url = 'http://mattmahoney.net/dc/'
+# Step 1: Load Data.
+DATA_PATH = os.path.abspath('data')
+
+# read the data into a list of strings, and return as a list of words
+def read_data(data_path):
+    files = []
+    for filename in os.listdir(data_path):
+        files.append(import_file('{}/{}'.format(data_path, filename)))
+
+    corpus_raw = ' '.join(files)
+
+    words = []
+    for word in corpus_raw.split():
+        words.append(tf.compat.as_str(word))
+    # words = set(words)
+
+    return words
+
+def import_file(file_path):
+    file_text = []
+    with open(file_path, 'r', encoding="utf8") as file:
+        file_text = file.read()
+
+    # clean up string (remove non ascii chars)
+    filtered_string = "".join(filter(lambda x: x in string.printable, file_text))
+    filtered_string = re.sub(r'[^a-zA-Z\s]', '', filtered_string)
+
+    return filtered_string
 
 
-# pylint: disable=redefined-outer-name
-def maybe_download(filename, expected_bytes):
-  """Download a file if not present, and make sure it's the right size."""
-  local_filename = os.path.join(gettempdir(), filename)
-  if not os.path.exists(local_filename):
-    local_filename, _ = urllib.request.urlretrieve(url + filename,
-                                                   local_filename)
-  statinfo = os.stat(local_filename)
-  if statinfo.st_size == expected_bytes:
-    print('Found and verified', filename)
-  else:
-    print(statinfo.st_size)
-    raise Exception('Failed to verify ' + local_filename +
-                    '. Can you get to it with a browser?')
-  return local_filename
 
-
-filename = maybe_download('text8.zip', 31344016)
-
-
-# Read the data into a list of strings.
-def read_data(filename):
-  """Extract the first file enclosed in a zip file as a list of words."""
-  with zipfile.ZipFile(filename) as f:
-    data = tf.compat.as_str(f.read(f.namelist()[0])).split()
-  return data
-
-vocabulary = read_data(filename)
-print('Data size', len(vocabulary))
+vocabulary = read_data(DATA_PATH)
+print('\nVocabulary', vocabulary)
+print('\nData size', len(vocabulary))
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
-vocabulary_size = 50000
+vocabulary_size = 1000
 
 
 def build_dataset(words, n_words):
@@ -95,9 +97,12 @@ def build_dataset(words, n_words):
 data, count, dictionary, reverse_dictionary = build_dataset(vocabulary,
                                                             vocabulary_size)
 del vocabulary  # Hint to reduce memory.
-print('Most common words (+UNK)', count[:5])
-print('Sample data', data[:10], [reverse_dictionary[i] for i in data[:10]])
-
+print('\nMost common words (+UNK)', count[:5])
+print('\nSample data', data[:10], [reverse_dictionary[i] for i in data[:10]])
+print('\nData', data)
+print('\nCount', count)
+print('\nDictionary', dictionary)
+print('\nReverse Dictionary', reverse_dictionary)
 data_index = 0
 
 # Step 3: Function to generate a training batch for the skip-gram model.
@@ -120,7 +125,9 @@ def generate_batch(batch_size, num_skips, skip_window):
       batch[i * num_skips + j] = buffer[skip_window]
       labels[i * num_skips + j, 0] = buffer[context_word]
     if data_index == len(data):
-      buffer[:] = data[:span]
+      # buffer[:] = data[:span]
+      for word in data[:span]:
+          buffer.append(word)
       data_index = span
     else:
       buffer.append(data[data_index])
@@ -149,7 +156,6 @@ num_sampled = 64      # Number of negative examples to sample.
 valid_size = 16     # Random set of words to evaluate similarity on.
 valid_window = 100  # Only pick dev samples in the head of the distribution.
 valid_examples = np.random.choice(valid_window, valid_size, replace=False)
-
 
 graph = tf.Graph()
 
@@ -231,9 +237,10 @@ with tf.Session(graph=graph) as session:
       sim = similarity.eval()
       for i in xrange(valid_size):
         valid_word = reverse_dictionary[valid_examples[i]]
-        top_k = 8  # number of nearest neighbors
+        top_k = 4  # number of nearest neighbors
         nearest = (-sim[i, :]).argsort()[1:top_k + 1]
         log_str = 'Nearest to %s:' % valid_word
+
         for k in xrange(top_k):
           close_word = reverse_dictionary[nearest[k]]
           log_str = '%s %s,' % (log_str, close_word)
