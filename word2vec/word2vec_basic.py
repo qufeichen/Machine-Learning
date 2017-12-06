@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Basic word2vec example - modified to train on local data instead of download text8.zip"""
+"""Basic word2vec example - modified to train on local data instead of download text8.zip, and implemented save function"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -33,6 +33,8 @@ import tensorflow as tf
 
 # Step 1: Load Data.
 DATA_PATH = os.path.abspath('data')
+SAVE_PATH = os.path.abspath('save')
+SAVE_NAME = '/model_1'
 
 # read the data into a list of strings, and return as a list of words
 def read_data(data_path):
@@ -162,15 +164,15 @@ graph = tf.Graph()
 with graph.as_default():
 
   # Input data.
-  train_inputs = tf.placeholder(tf.int32, shape=[batch_size])
-  train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1])
+  train_inputs = tf.placeholder(tf.int32, shape=[batch_size], name="input_placeholder")
+  train_labels = tf.placeholder(tf.int32, shape=[batch_size, 1], name="labels_placeholder")
   valid_dataset = tf.constant(valid_examples, dtype=tf.int32)
 
   # Ops and variables pinned to the CPU because of missing GPU implementation
   with tf.device('/cpu:0'):
     # Look up embeddings for inputs.
     embeddings = tf.Variable(
-        tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0))
+        tf.random_uniform([vocabulary_size, embedding_size], -1.0, 1.0), name="embeddings")
     embed = tf.nn.embedding_lookup(embeddings, train_inputs)
 
     # Construct the variables for the NCE loss
@@ -206,8 +208,11 @@ with graph.as_default():
   # Add variable initializer.
   init = tf.global_variables_initializer()
 
+  # Save variables
+  saver = tf.train.Saver()
+
 # Step 5: Begin training.
-num_steps = 100001
+num_steps = 1
 
 with tf.Session(graph=graph) as session:
   # We must initialize all variables before we use them.
@@ -246,6 +251,9 @@ with tf.Session(graph=graph) as session:
           log_str = '%s %s,' % (log_str, close_word)
         print(log_str)
   final_embeddings = normalized_embeddings.eval()
+
+  # Saving the model
+  saver.save(session, SAVE_PATH + SAVE_NAME)
 
 # Step 6: Visualize the embeddings.
 
