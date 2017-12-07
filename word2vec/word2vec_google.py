@@ -6,12 +6,32 @@ import string
 import re
 from sklearn.feature_extraction import text
 import collections
+import timeit
+
+# start timer - used to record run time
+start_time = timeit.default_timer()
 
 # Load Google's pre-trained Word2Vec model.
 print('\nLoading Model...')
-print('---------------------------------------------------\n')
+print('---------------------------------------------------')
 model = gensim.models.KeyedVectors.load_word2vec_format('/Users/qufeichen/Documents/Repos/Machine-Learning/word2vec/GoogleNews-vectors-negative300.bin.gz', binary=True)
 
+# timer for model load time
+model_load_time = timeit.default_timer()
+
+# query fields
+input1 = 'cat'
+input2 = 'kitten'
+
+
 # run query
-result = model.similarity('cat', 'kitten')
-print(result)
+result = model.similarity(input1, input2)
+
+# time to load model
+stop_time = timeit.default_timer()
+
+# print results
+print('Similarity between {} and {}: {}'.format(input1, input2, result))
+# print times
+print('Time taken to load model: {}'.format(start_time - model_load_time))
+print('Total Execution time: {}\n'.format(start_time - stop_time))
