@@ -19,19 +19,31 @@ model = gensim.models.KeyedVectors.load_word2vec_format('/Users/qufeichen/Docume
 # timer for model load time
 model_load_time = timeit.default_timer()
 
-# query fields
-input1 = 'cat'
-input2 = 'kitten'
+# First Test: querying two words:
+input_1 = 'cat'
+input_2 = 'kitten'
 
+result_1 = model.similarity(input_1, input_2)
 
-# run query
-result = model.similarity(input1, input2)
+# Second Test: querying two lists:
+input_list_1 = ['cats', 'are', 'inferior', 'than', 'dogs']
+input_list_2 = ['dogs', 'are', 'way', 'better', 'than', 'cats']
 
-# time to load model
+result_2 = model.n_similarity(input_list_1, input_list_2)
+
+# Second Test: Testing positive and negative
+input_3 = ['pet', 'young', 'dog']
+input_4 = ['cat']
+
+result_3 = model.most_similar(positive=input_3, negative=input_4)
+
+# end timer
 stop_time = timeit.default_timer()
 
 # print results
-print('Similarity between {} and {}: {}'.format(input1, input2, result))
+print('Similarity between {} and {}:\n {}'.format(input_1, input_2, result_1))
+print('Similarity between {} and {}:\n {}'.format(input_list_1, input_list_2, result_2))
+print('Most Similar with Positive: {}, Negative: {}:\n {}'.format(input_3, input_4, result_3))
 # print times
 print('Time taken to load model: {}'.format(start_time - model_load_time))
 print('Total Execution time: {}\n'.format(start_time - stop_time))
