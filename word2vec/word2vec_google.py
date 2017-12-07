@@ -19,6 +19,8 @@ model = gensim.models.KeyedVectors.load_word2vec_format('/Users/qufeichen/Docume
 # timer for model load time
 model_load_time = timeit.default_timer()
 
+print('\nRunning Queries...')
+print('---------------------------------------------------')
 # First Test: querying two words:
 input_1 = 'cat'
 input_2 = 'kitten'
@@ -26,8 +28,11 @@ input_2 = 'kitten'
 result_1 = model.similarity(input_1, input_2)
 
 # Second Test: querying two lists:
-input_list_1 = ['cats', 'are', 'inferior', 'than', 'dogs']
-input_list_2 = ['dogs', 'are', 'way', 'better', 'than', 'cats']
+input_list_1 = ['dogs', 'are', 'better', 'than', 'cats']
+input_list_2 = ['puppies', 'are', 'better', 'than', 'kittens']
+# filter out words that are not in google's pretrained model
+input_list_1 = list(filter(lambda x: x in model.vocab, input_list_1))
+input_list_2 = list(filter(lambda x: x in model.vocab, input_list_2))
 
 result_2 = model.n_similarity(input_list_1, input_list_2)
 
@@ -39,11 +44,13 @@ result_3 = model.most_similar(positive=input_3, negative=input_4)
 
 # end timer
 stop_time = timeit.default_timer()
-
+print('\nResults:')
+print('---------------------------------------------------')
 # print results
-print('Similarity between {} and {}:\n {}'.format(input_1, input_2, result_1))
-print('Similarity between {} and {}:\n {}'.format(input_list_1, input_list_2, result_2))
-print('Most Similar with Positive: {}, Negative: {}:\n {}'.format(input_3, input_4, result_3))
+print('Similarity between {} and {}:\n {}\n'.format(input_1, input_2, result_1))
+print('Similarity between {} and {}:\n {}\n'.format(input_list_1, input_list_2, result_2))
+print('Most Similar with Positive: {}, Negative: {}:\n {}\n'.format(input_3, input_4, result_3))
 # print times
+print('---------------------------------------------------')
 print('Time taken to load model: {}'.format(start_time - model_load_time))
 print('Total Execution time: {}\n'.format(start_time - stop_time))
